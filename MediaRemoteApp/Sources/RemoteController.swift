@@ -238,7 +238,7 @@ final class RemoteController {
                 guard !Task.isCancelled else { break }
                 // Re-read interval every iteration so cadence can react
                 // to the snapshot we just received.
-                let interval = await self?.currentPollInterval ?? .seconds(2)
+                let interval = self?.currentPollInterval ?? .seconds(2)
                 try? await Task.sleep(for: interval)
             }
         }
