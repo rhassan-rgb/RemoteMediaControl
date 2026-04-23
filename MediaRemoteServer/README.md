@@ -43,6 +43,18 @@ command is exercised.
 
 Volume changes do **not** require any special permission.
 
+## Menu-bar feedback
+
+The menu-bar icon shows a small green dot (` ●`) whenever at least one
+client is currently connected, and drops back to the plain icon when
+nobody's on the socket. Opening the menu reveals a live
+`N client(s) connected` row so you can see at a glance whether the
+iPhone has an active session. Accept failures, oversized-line drops,
+and idle-timeout closes are logged unconditionally via `NSLog` (i.e.
+visible in `Console.app` even in release builds, not just
+`make DEBUG=1`) — useful when diagnosing flaky connections without
+rebuilding.
+
 ## Configuring supported players
 
 `getSong` and `getPlayer` walk a compiled-in table of AppleScript
@@ -59,21 +71,29 @@ to execute arbitrary AppleScript. See `SECURITY_REVIEW.md` M-2.)
 With the server running, from another shell on the Mac:
 
 ```sh
-$ echo ping   | nc -U ~/.media-remote/sock
+$ printf 'ping\nquit\n'           | nc -U ~/.media-remote/sock
 OK pong
-$ echo getVol | nc -U ~/.media-remote/sock
+OK bye
+$ printf 'getVol\nquit\n'         | nc -U ~/.media-remote/sock
 OK 0.520
-$ echo 'setVol 0.3' | nc -U ~/.media-remote/sock
+OK bye
+$ printf 'setVol 0.3\nquit\n'     | nc -U ~/.media-remote/sock
 OK
-$ echo getSong | nc -U ~/.media-remote/sock
-OK {"title":"Protection","artist":"Massive Attack","album":"Protection","duration":472.1,"elapsed":58.7}
+OK bye
+$ printf 'getState\nquit\n'       | nc -U ~/.media-remote/sock
+OK {"vol":0.520,"song":{"title":"Protection","artist":"Massive Attack","album":"Protection","duration":472.1,"elapsed":58.7},"player":{"bundleId":"com.apple.Music","displayName":"Music"}}
+OK bye
 ```
 
-The server half-closes its write side after each reply (`shutdown(SHUT_WR)`),
-which macOS's built-in `nc` interprets as EOF and exits cleanly. You'll
-get one command per connection; for a second command, reconnect. The
-server also applies a **30-second idle timeout** per connection and
-rejects any unterminated line larger than **8 KiB**.
+The server keeps each connection open for a session: you can issue
+multiple commands on one socket and the server will reply to each in
+turn. A connection closes on `quit`, on peer EOF, or after a
+**30-second idle timeout**. Lines larger than **8 KiB** without a
+newline are rejected. (Earlier versions half-closed after every reply,
+which made `echo cmd | nc -U` exit cleanly on its own; that behaviour
+was removed to let the iOS app reuse a single session across many
+commands. Always terminate one-shot scripts with `quit`, otherwise
+`nc` will sit waiting for the idle timer.)
 
 Or from another machine, once SSH is enabled:
 
@@ -89,7 +109,7 @@ ssh macbook.local "echo getSong | nc -U ~/.media-remote/sock"
 | `Sources/AppDelegate.mm`    | NSStatusItem (menu-bar icon) + server lifecycle      |
 | `Sources/SocketServer.mm`   | Unix domain socket + GCD I/O                         |
 | `Sources/CommandHandler.mm` | Parses a line, calls into the other modules          |
-| `Sources/MediaRemote.mm`    | AppleScript path (default) + dlsym wrappers for the private framework + HID fallback |
+| `Sources/MediaRemote.mm`    | AppleScript path (default) + dlsym wrappers for the private framework + HID fallback; caches the active player for 1.5 s to avoid thrashing the AppleScript bridge during poll-heavy traffic |
 | `Sources/PlayerConfig.mm`   | Compiled-in list of AppleScript snippets per player  |
 | `Sources/VolumeControl.mm`  | CoreAudio default-device volume get/set              |
 | `Resources/Info.plist`      | `LSUIElement=YES` (no Dock icon)                     |

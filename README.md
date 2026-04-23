@@ -61,12 +61,25 @@ Line-oriented ASCII; one command per line, one reply per line.
 | `mute`/`unmute` |              | `OK`                                                                  |
 | `getSong`     |                | `OK {"title":"…","artist":"…","album":"…","duration":…,"elapsed":…}`  |
 | `getPlayer`   |                | `OK {"bundleId":"com.apple.Music","displayName":"Music"}`             |
+| `getState`    |                | `OK {"vol":0.47,"song":{…},"player":{…}}` (combined snapshot)         |
 | `ping`        |                | `OK pong`                                                             |
 | `quit`        |                | `OK bye` (server closes the connection)                               |
 
+`getState` is the endpoint the iOS app polls each tick — it collapses
+what used to be three separate round-trips (`getVol` + `getSong` +
+`getPlayer`) into one reply, so each poll opens a single SSH channel
+instead of three. The `song` and `player` keys are `null` when nothing
+is playing.
+
 You can test any of these by hand once the server is running:
 
-    ssh macbook.local "echo getSong | nc -U ~/.media-remote/sock"
+    ssh macbook.local "printf 'getState\nquit\n' | nc -U ~/.media-remote/sock"
+
+The server keeps each connection open until it receives `quit`, the
+peer closes, or the 30-second idle timer fires — so if you just
+`echo ping | nc -U …` without a trailing `quit`, `nc` will sit there
+until the idle timeout rather than exiting immediately. For one-shot
+scripting, always terminate the session with `quit`.
 
 ## Getting started
 

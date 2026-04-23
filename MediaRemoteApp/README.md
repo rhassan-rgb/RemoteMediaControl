@@ -86,6 +86,33 @@ Sources/
     └── VolumeSlider.swift      bi-directional slider
 ```
 
+## Behaviour notes
+
+- **Adaptive polling.** `RemoteController` polls the server via `getState`
+  every 2 s when a player is active and 8 s when nothing is playing, so
+  an idle app isn't waking the radio as often. Each tick is a single
+  SSH channel that returns volume, track, and player in one payload.
+- **Immediate refresh on action.** Tapping prev / play-pause / next
+  kicks an extra `getState` right after the command so the UI doesn't
+  wait up to 2 s for the next poll tick to reflect the change.
+- **Pull-to-refresh.** Dragging the main screen down calls
+  `requestRetry()` — useful after the Mac wakes from sleep, the Wi-Fi
+  blips, or an SSH key was rotated.
+- **Background-aware reconnect.** When the app returns to the
+  foreground, the SSH transport is rebuilt automatically (iOS tears
+  the socket down a few seconds after backgrounding). The
+  `credentialProvider` hook lets the controller look up the right
+  Keychain credential on its own without a fresh view-level
+  `connect(to:credential:)`.
+- **Structured connection errors.** The status pill under the device
+  bar shows `Connecting…`, `Connected`, `Disconnected`, or a short
+  failure label (e.g. `Auth failed`, `Host key changed`,
+  `Unreachable`). Tapping it on failure surfaces the full NIO/Citadel
+  error in an alert with a **Retry** action.
+- **Haptics.** Subtle taptics on transport taps (light impact,
+  connected-only) and on volume drag-end (selection feedback). No
+  mid-drag buzz.
+
 ## Security notes
 
 - **Host-key verification** is TOFU ("trust on first use"). The first
@@ -116,9 +143,18 @@ Sources/
 
 ## Customisation ideas
 
-- Poll cadence is hard-coded to 2 s in `RemoteController.startPolling`.
+- Poll cadence lives in `RemoteController.pollIntervalActive` /
+  `pollIntervalIdle` (2 s / 8 s by default). Tweak there if you want a
+  snappier update while nothing is playing, or a less chatty one while
+  listening.
 - Only one device is connected at a time. Adding multi-device "sticky"
   connections would involve keeping a dictionary of `CitadelSSHTransport`
   per selected device.
 - The volume slider is continuous from 0 to 1 and only pushes on
   `onEditingChanged(false)`. Swap to a debounced live push if you prefer.
+- Each poll tick still opens a fresh Citadel exec channel. A truly
+  persistent bidirectional channel (one SSH session that streams
+  commands and replies for the whole foreground session) is the
+  bigger win left on the table — it's flagged as future work in
+  `CitadelSSHTransport.swift` and depends on Citadel exposing a more
+  ergonomic exec-stream API.
