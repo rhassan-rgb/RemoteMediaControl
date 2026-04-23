@@ -1,0 +1,29 @@
+# OS files
+.DS_Store
+.DS_Store?
+*.swp
+*.swo
+
+# IDEs
+.vscode/
+.idea/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment variables
+.env
+*.env.local
+
+# Xcode
+*.xcodeproj/
+
+# Build outputs
+dist/
+build/
+out/
+SECURITY_REVIEW.md

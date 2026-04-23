@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>            <string>en</string>
+    <key>CFBundleExecutable</key>                   <string>MediaRemoteServer</string>
+    <key>CFBundleIdentifier</key>                   <string>com.ragab.MediaRemoteServer</string>
+    <key>CFBundleInfoDictionaryVersion</key>        <string>6.0</string>
+    <key>CFBundleName</key>                         <string>MediaRemoteServer</string>
+    <key>CFBundlePackageType</key>                  <string>APPL</string>
+    <key>CFBundleShortVersionString</key>           <string>0.1</string>
+    <key>CFBundleVersion</key>                      <string>1</string>
+    <key>LSMinimumSystemVersion</key>               <string>12.0</string>
+    <!-- Menu-bar-only (no Dock icon, no main window). -->
+    <key>LSUIElement</key>                          <true/>
+    <key>NSHumanReadableCopyright</key>             <string>© Ragab</string>
+    <key>NSSupportsAutomaticTermination</key>       <false/>
+    <key>NSSupportsSuddenTermination</key>          <true/>
+    <!-- Explanations shown if macOS asks for these permissions. -->
+    <key>NSAppleEventsUsageDescription</key>
+        <string>Used to control media playback in apps that expose AppleScript.</string>
+    <key>NSAppleMusicUsageDescription</key>
+        <string>Used to read current track metadata from Music.</string>
+</dict>
+</plist>
